@@ -1,0 +1,1130 @@
+from pathlib import Path
+
+html = r'''<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>New Economy — V0</title>
+<style>
+  :root{
+    --bg:#f4f6f8;
+    --panel:#ffffff;
+    --panel2:#f8fafc;
+    --text:#17202a;
+    --muted:#6b7280;
+    --line:#e5e7eb;
+    --accent:#2563eb;
+    --accent-soft:#eff6ff;
+    --green:#16834b;
+    --red:#c24141;
+    --shadow:0 8px 30px rgba(15,23,42,.07);
+    --radius:18px;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Arial,sans-serif;
+    line-height:1.45;
+  }
+  button,input,select{font:inherit}
+  button{cursor:pointer}
+  .hidden{display:none!important}
+
+  /* Setup */
+  #setup{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:32px 18px;
+  }
+  .setup-card{
+    width:min(680px,100%);
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:26px;
+    box-shadow:var(--shadow);
+    padding:38px;
+  }
+  .eyebrow{
+    color:var(--accent);
+    font-size:12px;
+    font-weight:800;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    margin-bottom:10px;
+  }
+  h1,h2,h3,p{margin-top:0}
+  .setup-card h1{font-size:34px;letter-spacing:-.04em;margin-bottom:10px}
+  .setup-card .intro{color:var(--muted);max-width:570px;margin-bottom:28px}
+  .field{margin-bottom:20px}
+  label{display:block;font-size:13px;font-weight:750;margin-bottom:8px}
+  input,select{
+    width:100%;
+    border:1px solid var(--line);
+    background:#fff;
+    border-radius:12px;
+    padding:13px 14px;
+    color:var(--text);
+    outline:none;
+  }
+  input:focus,select:focus{border-color:#93b4f8;box-shadow:0 0 0 3px var(--accent-soft)}
+  .industry-grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:10px;
+  }
+  .industry{
+    border:1px solid var(--line);
+    background:var(--panel2);
+    border-radius:13px;
+    padding:13px;
+    text-align:left;
+    transition:.15s ease;
+  }
+  .industry:hover{border-color:#b9c9e8}
+  .industry.selected{border-color:var(--accent);background:var(--accent-soft)}
+  .industry strong{display:block;font-size:14px}
+  .industry span{font-size:12px;color:var(--muted)}
+  .primary{
+    border:0;
+    background:var(--accent);
+    color:white;
+    padding:13px 18px;
+    border-radius:12px;
+    font-weight:800;
+    width:100%;
+    margin-top:6px;
+  }
+  .primary:hover{filter:brightness(.96)}
+  .note{font-size:12px;color:var(--muted);margin-top:12px;text-align:center}
+
+  /* App */
+  #app{min-height:100vh}
+  .topbar{
+    position:sticky;
+    top:0;
+    z-index:20;
+    background:rgba(255,255,255,.94);
+    backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--line);
+  }
+  .topbar-inner{
+    max-width:1200px;
+    margin:auto;
+    min-height:72px;
+    display:grid;
+    grid-template-columns:1.3fr 1fr 1fr 1fr;
+    align-items:center;
+    gap:12px;
+    padding:10px 18px;
+  }
+  .brand{font-weight:900;letter-spacing:-.02em}
+  .brand small{display:block;color:var(--muted);font-size:11px;font-weight:650;margin-top:1px}
+  .top-stat{
+    min-width:0;
+    padding:8px 12px;
+    border-left:1px solid var(--line);
+  }
+  .top-stat .label{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+  .top-stat .value{font-weight:800;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .time-value{color:var(--accent)}
+
+  .layout{
+    max-width:1200px;
+    margin:0 auto;
+    padding:22px 18px 50px;
+    display:grid;
+    grid-template-columns:220px minmax(0,1fr);
+    gap:20px;
+  }
+  .sidebar{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:10px;
+    height:max-content;
+    position:sticky;
+    top:94px;
+  }
+  .nav-btn{
+    width:100%;
+    border:0;
+    background:transparent;
+    padding:12px;
+    border-radius:11px;
+    text-align:left;
+    color:#4b5563;
+    font-weight:700;
+    margin-bottom:3px;
+  }
+  .nav-btn:hover{background:var(--panel2)}
+  .nav-btn.active{background:var(--accent-soft);color:var(--accent)}
+  .badge{
+    float:right;
+    min-width:20px;
+    padding:2px 6px;
+    border-radius:20px;
+    background:#fee2e2;
+    color:#b91c1c;
+    text-align:center;
+    font-size:11px;
+  }
+
+  .page-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    gap:15px;
+    margin-bottom:18px;
+  }
+  .page-head h2{font-size:28px;letter-spacing:-.035em;margin-bottom:4px}
+  .page-head p{color:var(--muted);margin:0}
+  .pill{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    border:1px solid var(--line);
+    background:var(--panel);
+    padding:7px 10px;
+    border-radius:999px;
+    font-size:12px;
+    font-weight:750;
+    color:#4b5563;
+  }
+
+  .cards{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:12px;
+    margin-bottom:14px;
+  }
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:18px;
+    box-shadow:0 2px 10px rgba(15,23,42,.025);
+  }
+  .metric .label{font-size:12px;color:var(--muted);margin-bottom:7px}
+  .metric .number{font-size:22px;font-weight:850;letter-spacing:-.03em}
+  .metric .sub{font-size:11px;color:var(--muted);margin-top:3px}
+  .green{color:var(--green)!important}
+  .red{color:var(--red)!important}
+
+  .grid2{display:grid;grid-template-columns:1.15fr .85fr;gap:14px}
+  .card-title{
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    align-items:center;
+    margin-bottom:15px;
+  }
+  .card-title h3{font-size:16px;margin:0;letter-spacing:-.02em}
+  .muted{color:var(--muted)}
+  .decision-card{border-color:#d8e4fb}
+  .decision-meta{font-size:11px;color:var(--accent);font-weight:800;text-transform:uppercase;letter-spacing:.06em}
+  .decision-card h3{font-size:20px;letter-spacing:-.025em;margin:7px 0}
+  .decision-card p{color:#596273;font-size:14px}
+  .options{display:grid;gap:8px;margin-top:15px}
+  .option{
+    border:1px solid var(--line);
+    background:#fff;
+    border-radius:12px;
+    padding:12px 13px;
+    text-align:left;
+    transition:.15s ease;
+  }
+  .option:hover{border-color:#9fb8e7;background:#fbfdff}
+  .option strong{display:block;font-size:13px;margin-bottom:2px}
+  .option span{font-size:12px;color:var(--muted)}
+  .result{
+    border-radius:12px;
+    padding:13px;
+    background:var(--panel2);
+    border:1px solid var(--line);
+    font-size:13px;
+  }
+  .result strong{display:block;margin-bottom:4px}
+
+  .progress-wrap{margin-top:10px}
+  .progress-line{height:8px;border-radius:99px;background:#edf0f3;overflow:hidden}
+  .progress-fill{height:100%;background:var(--accent);border-radius:99px;transition:.3s}
+  .progress-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:6px}
+
+  .list{display:grid;gap:8px}
+  .list-item{
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:12px;
+    background:var(--panel2);
+  }
+  .list-item .row{display:flex;justify-content:space-between;gap:10px}
+  .list-item strong{font-size:13px}
+  .list-item p{font-size:12px;color:var(--muted);margin:4px 0 0}
+  .empty{
+    border:1px dashed #cfd5dc;
+    border-radius:14px;
+    padding:28px;
+    text-align:center;
+    color:var(--muted);
+    background:var(--panel2);
+  }
+
+  .stat-table{width:100%;border-collapse:collapse}
+  .stat-table td{padding:11px 0;border-bottom:1px solid var(--line);font-size:13px}
+  .stat-table tr:last-child td{border-bottom:0}
+  .stat-table td:last-child{text-align:right;font-weight:800}
+
+  .toast{
+    position:fixed;
+    right:18px;
+    bottom:18px;
+    background:#111827;
+    color:#fff;
+    padding:13px 15px;
+    border-radius:12px;
+    box-shadow:0 12px 35px rgba(0,0,0,.18);
+    max-width:340px;
+    font-size:13px;
+    z-index:50;
+    animation:toastIn .2s ease;
+  }
+  @keyframes toastIn{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}
+
+  .footer-note{margin-top:16px;font-size:11px;color:var(--muted);text-align:center}
+
+  @media(max-width:850px){
+    .topbar-inner{grid-template-columns:1fr 1fr}
+    .top-stat{border-left:0}
+    .layout{grid-template-columns:1fr}
+    .sidebar{position:static}
+    .cards{grid-template-columns:repeat(2,1fr)}
+    .grid2{grid-template-columns:1fr}
+  }
+  @media(max-width:520px){
+    .setup-card{padding:25px}
+    .industry-grid{grid-template-columns:1fr}
+    .cards{grid-template-columns:1fr 1fr}
+    .topbar-inner{padding:8px 12px}
+    .layout{padding:16px 12px 35px}
+    .page-head{align-items:flex-start;flex-direction:column}
+  }
+</style>
+</head>
+<body>
+
+<section id="setup">
+  <div class="setup-card">
+    <div class="eyebrow">Economic Simulation · V0</div>
+    <h1>Build a company from nothing.</h1>
+    <p class="intro">
+      This prototype focuses on the core loop: choose a niche, start a tiny company,
+      receive business situations, make decisions, and watch the company respond.
+    </p>
+
+    <div class="field">
+      <label for="companyName">Company name</label>
+      <input id="companyName" maxlength="32" placeholder="e.g. Baltic Nova" autocomplete="off">
+    </div>
+
+    <div class="field">
+      <label>Choose your niche</label>
+      <div class="industry-grid" id="industryGrid"></div>
+    </div>
+
+    <button class="primary" id="startBtn">Create company</button>
+    <div class="note">V0 prototype · progress is stored only in this browser.</div>
+  </div>
+</section>
+
+<section id="app" class="hidden">
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        NEW ECONOMY
+        <small>Economic simulation · V0</small>
+      </div>
+      <div class="top-stat">
+        <div class="label">World time</div>
+        <div class="value time-value" id="worldTime">Monday, 09:00</div>
+      </div>
+      <div class="top-stat">
+        <div class="label">Company</div>
+        <div class="value" id="topCompany">—</div>
+      </div>
+      <div class="top-stat">
+        <div class="label">Cash</div>
+        <div class="value" id="topCash">€0</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <button class="nav-btn active" data-page="dashboard">Overview</button>
+      <button class="nav-btn" data-page="company">Company</button>
+      <button class="nav-btn" data-page="personal">Personal</button>
+      <button class="nav-btn" data-page="mailbox">Mailbox <span class="badge hidden" id="mailBadge">0</span></button>
+      <button class="nav-btn" data-page="news">World & News</button>
+      <button class="nav-btn" id="resetBtn">Reset prototype</button>
+    </aside>
+
+    <main id="main"></main>
+  </div>
+</section>
+
+<script>
+/* =========================================================
+   NEW ECONOMY — V0
+   Everything is intentionally kept in one file for the
+   first prototype. Later this can be split into modules
+   and connected to a real backend/database.
+   ========================================================= */
+
+const industries = {
+  technology: {
+    name:"Technology",
+    icon:"Tech",
+    description:"Software, digital services and technology products.",
+    baseValue:12000
+  },
+  manufacturing: {
+    name:"Manufacturing",
+    icon:"Mfg",
+    description:"Physical products and small-scale production.",
+    baseValue:14500
+  },
+  logistics: {
+    name:"Logistics",
+    icon:"Log",
+    description:"Transport, delivery and supply services.",
+    baseValue:13500
+  },
+  retail: {
+    name:"Retail",
+    icon:"Retail",
+    description:"Selling products directly to customers.",
+    baseValue:11000
+  },
+  construction: {
+    name:"Construction",
+    icon:"Build",
+    description:"Construction, renovation and contracting.",
+    baseValue:14000
+  },
+  food: {
+    name:"Food",
+    icon:"Food",
+    description:"Food production, preparation and supply.",
+    baseValue:10500
+  }
+};
+
+let state = {
+  started:false,
+  company:null,
+  personal:null,
+  currentPage:"dashboard",
+  worldMinutes:540, // Monday 09:00
+  worldDay:1,
+  completedTasks:[],
+  activeTask:null,
+  news:[],
+  lastRealTimestamp:Date.now()
+};
+
+const taskBank = [
+  {
+    id:"customer_first_contact",
+    industries:["technology","manufacturing","logistics","retail","construction","food"],
+    title:"A potential customer reaches out",
+    category:"Customer",
+    text:"A small local business has heard about your new company. They are interested in working with you, but they are not ready to sign anything yet. How do you respond?",
+    options:[
+      {label:"Invite them to a conversation",desc:"Start building the relationship before discussing a deal.",effects:{reputation:2,relationships:5,performance:2,cash:-15}},
+      {label:"Send a very low introductory offer",desc:"Try to get their attention with an aggressive price.",effects:{relationships:3,performance:1,cash:-40}},
+      {label:"Ask for their exact needs first",desc:"Learn more before making promises.",effects:{relationships:4,performance:3}},
+      {label:"Tell them you are too new",desc:"Avoid taking on something you may not be ready for.",effects:{reputation:1,performance:-1}}
+    ]
+  },
+  {
+    id:"supplier_terms",
+    industries:["manufacturing","logistics","retail","food"],
+    title:"A supplier offers better terms",
+    category:"Supplier",
+    text:"A supplier is willing to give your startup slightly better payment terms if you can show that you are likely to become a regular customer.",
+    options:[
+      {label:"Commit to regular orders",desc:"Better terms now, but less flexibility later.",effects:{relationships:6,performance:2,cash:80}},
+      {label:"Ask for a smaller commitment",desc:"Keep flexibility while still improving the relationship.",effects:{relationships:4,performance:3,cash:30}},
+      {label:"Decline for now",desc:"Keep your options open with other suppliers.",effects:{performance:0}},
+      {label:"Ask for an even bigger discount",desc:"Push your negotiating position while you have the chance.",effects:{relationships:-2,cash:100,performance:1}}
+    ]
+  },
+  {
+    id:"software_scope",
+    industries:["technology"],
+    title:"The customer wants extra features",
+    category:"Project",
+    text:"A prospective customer wants several extra features added to a small project. They say the features would make the service much more useful to them.",
+    options:[
+      {label:"Agree to everything",desc:"Keep the customer happy, but take on more work.",effects:{relationships:5,performance:-2,cash:70}},
+      {label:"Charge for the extra work",desc:"Protect the company's resources and price the additional scope.",effects:{relationships:2,performance:3,cash:120}},
+      {label:"Offer a smaller compromise",desc:"Give them the most important feature without expanding the whole project.",effects:{relationships:4,performance:4,cash:60}},
+      {label:"Refuse the changes",desc:"Keep the original scope exactly as planned.",effects:{relationships:-2,performance:1,cash:20}}
+    ]
+  },
+  {
+    id:"inventory_choice",
+    industries:["manufacturing","retail","food"],
+    title:"Inventory is running low",
+    category:"Operations",
+    text:"You notice that one important item is running lower than expected. Demand has been fairly stable, but a larger order could arrive soon.",
+    options:[
+      {label:"Order a small amount",desc:"Keep a safety buffer without tying up much cash.",effects:{cash:-90,performance:4}},
+      {label:"Order a large amount",desc:"Prepare for higher demand, but use more cash now.",effects:{cash:-180,performance:5}},
+      {label:"Wait for more information",desc:"Preserve cash and accept some risk of shortage.",effects:{performance:-1,cash:10}},
+      {label:"Contact the supplier first",desc:"Ask about delivery timing and available stock.",effects:{relationships:4,performance:3,cash:-15}}
+    ]
+  },
+  {
+    id:"logistics_route",
+    industries:["logistics"],
+    title:"A delivery route becomes inefficient",
+    category:"Operations",
+    text:"One of your regular delivery routes has become less efficient. You can change how the route is handled, but every option has a trade-off.",
+    options:[
+      {label:"Use a faster route",desc:"Higher operating cost, but more reliable delivery.",effects:{cash:-65,reputation:4,performance:5}},
+      {label:"Keep the current route",desc:"No immediate cost, but accept the inefficiency.",effects:{performance:-2}},
+      {label:"Combine two deliveries",desc:"Save resources, but both customers will have less flexibility.",effects:{cash:70,performance:2,relationships:-1}},
+      {label:"Ask the customers about timing",desc:"Try to redesign the schedule around their needs.",effects:{relationships:5,performance:4,cash:-10}}
+    ]
+  },
+  {
+    id:"retail_demand",
+    industries:["retail"],
+    title:"Demand suddenly increases",
+    category:"Sales",
+    text:"A product you sell has started receiving more attention. You cannot tell yet whether the increase is temporary or the start of a trend.",
+    options:[
+      {label:"Increase your stock",desc:"Prepare for the possibility that demand continues.",effects:{cash:-110,performance:5}},
+      {label:"Raise the price slightly",desc:"Improve margins while demand is strong.",effects:{cash:120,relationships:-1,performance:2}},
+      {label:"Do nothing yet",desc:"Wait for a clearer signal before changing your strategy.",effects:{performance:1}},
+      {label:"Contact the supplier",desc:"See whether you can secure flexible supply.",effects:{relationships:4,performance:4,cash:-20}}
+    ]
+  },
+  {
+    id:"construction_client",
+    industries:["construction"],
+    title:"A client wants a faster completion",
+    category:"Client",
+    text:"A potential client asks whether your company can complete a project sooner than originally discussed. Finishing faster could make you more attractive, but would put pressure on your limited resources.",
+    options:[
+      {label:"Accept the faster deadline",desc:"Take the opportunity and stretch the company.",effects:{relationships:6,performance:-1,cash:90}},
+      {label:"Offer a realistic compromise",desc:"Try to meet them halfway.",effects:{relationships:5,performance:4,cash:50}},
+      {label:"Keep the original timeline",desc:"Protect quality and avoid overcommitting.",effects:{relationships:1,performance:3}},
+      {label:"Decline the project",desc:"Avoid a commitment you may not be ready for.",effects:{relationships:-3,performance:1}}
+    ]
+  },
+  {
+    id:"food_quality",
+    industries:["food"],
+    title:"A small quality concern",
+    category:"Quality",
+    text:"You notice a minor inconsistency in one of your products. It is not currently dangerous, but it could become a reputation problem if ignored.",
+    options:[
+      {label:"Investigate immediately",desc:"Spend resources now to understand the cause.",effects:{cash:-75,reputation:6,performance:5}},
+      {label:"Monitor it closely",desc:"Keep operating while collecting more information.",effects:{reputation:2,performance:2}},
+      {label:"Replace the affected stock",desc:"Take the safest customer-facing approach.",effects:{cash:-130,reputation:7,performance:3}},
+      {label:"Ignore it",desc:"Avoid immediate cost and hope the issue disappears.",effects:{reputation:-7,performance:-5,cash:20}}
+    ]
+  },
+  {
+    id:"bank_checkin",
+    industries:["technology","manufacturing","logistics","retail","construction","food"],
+    title:"Your bank checks in",
+    category:"Finance",
+    text:"The bank that helped finance your startup asks how the business is progressing. They are not demanding anything yet, but your response will influence how the relationship develops.",
+    options:[
+      {label:"Send a detailed update",desc:"Be transparent and show that you are managing the company carefully.",effects:{relationships:5,reputation:2,performance:3}},
+      {label:"Give a short positive update",desc:"Keep the communication simple and confident.",effects:{relationships:2,performance:1}},
+      {label:"Ask what they expect from you",desc:"Use the opportunity to understand the bank's priorities.",effects:{relationships:4,performance:3}},
+      {label:"Avoid responding for now",desc:"Save time, but risk looking unreliable.",effects:{relationships:-5,reputation:-2,performance:-2}}
+    ]
+  },
+  {
+    id:"cash_allocation",
+    industries:["technology","manufacturing","logistics","retail","construction","food"],
+    title:"Where should the spare cash go?",
+    category:"Management",
+    text:"The company has a little more cash than expected. You cannot do everything at once, so you need to decide what deserves priority.",
+    options:[
+      {label:"Keep a cash buffer",desc:"Protect the company against unexpected problems.",effects:{cash:40,performance:2}},
+      {label:"Reinvest in the business",desc:"Spend now to improve future performance.",effects:{cash:-80,performance:7}},
+      {label:"Improve customer outreach",desc:"Put resources into finding future business.",effects:{cash:-55,relationships:5,performance:4}},
+      {label:"Pay down obligations",desc:"Improve the company's financial position.",effects:{cash:-50,reputation:3,performance:4}}
+    ]
+  },
+  {
+    id:"competitor_contact",
+    industries:["technology","manufacturing","logistics","retail","construction","food"],
+    title:"A competitor contacts you",
+    category:"Industry",
+    text:"A nearby company in your industry reaches out. They are not offering a deal. They simply want to get to know your company and discuss the market.",
+    options:[
+      {label:"Meet them openly",desc:"Build a professional relationship.",effects:{relationships:6,reputation:2}},
+      {label:"Keep the conversation formal",desc:"Be polite without revealing much.",effects:{relationships:2}},
+      {label:"Explore cooperation",desc:"Look for areas where both companies could benefit.",effects:{relationships:7,performance:2,cash:-20}},
+      {label:"Decline the conversation",desc:"Keep your focus on your own company.",effects:{relationships:-2,performance:1}}
+    ]
+  }
+];
+
+function save(){
+  localStorage.setItem("newEconomyV0", JSON.stringify(state));
+}
+function load(){
+  const raw=localStorage.getItem("newEconomyV0");
+  if(raw){
+    try{state=JSON.parse(raw); return true}catch(e){}
+  }
+  return false;
+}
+function money(n){
+  return "€"+Math.round(n).toLocaleString("en-US");
+}
+function clamp(n,min,max){return Math.max(min,Math.min(max,n))}
+function random(min,max){return Math.floor(Math.random()*(max-min+1))+min}
+function dayName(){
+  const days=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+  return days[(state.worldDay-1)%7];
+}
+function timeString(){
+  const h=Math.floor(state.worldMinutes/60);
+  const m=state.worldMinutes%60;
+  return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`;
+}
+function worldDateLabel(){
+  return `${dayName()}, ${timeString()}`;
+}
+function showToast(text){
+  const old=document.querySelector(".toast");
+  if(old) old.remove();
+  const el=document.createElement("div");
+  el.className="toast";
+  el.textContent=text;
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),3000);
+}
+
+function buildIndustryButtons(){
+  const grid=document.getElementById("industryGrid");
+  grid.innerHTML="";
+  Object.entries(industries).forEach(([key,ind],i)=>{
+    const b=document.createElement("button");
+    b.className="industry"+(i===0?" selected":"");
+    b.dataset.industry=key;
+    b.innerHTML=`<strong>${ind.icon} · ${ind.name}</strong><span>${ind.description}</span>`;
+    b.onclick=()=>{
+      document.querySelectorAll(".industry").forEach(x=>x.classList.remove("selected"));
+      b.classList.add("selected");
+    };
+    grid.appendChild(b);
+  });
+}
+
+function createCompany(){
+  const name=document.getElementById("companyName").value.trim();
+  const selected=document.querySelector(".industry.selected");
+  if(!name){showToast("Give your company a name first.");return}
+  if(!selected){showToast("Choose an industry.");return}
+
+  const industry=selected.dataset.industry;
+  const base=industries[industry].baseValue;
+
+  state={
+    started:true,
+    company:{
+      name,
+      industry,
+      cash:random(1800,3200),
+      value:base+random(-1200,1800),
+      revenue:random(140,260),
+      expenses:random(70,145),
+      employees:1,
+      performance:50,
+      reputation:50,
+      relationships:25,
+      level:1,
+      levelName:"Founder",
+      experience:0,
+      lastDecision:null,
+      streak:0
+    },
+    personal:{
+      cash:random(500,900),
+      decisions:0
+    },
+    currentPage:"dashboard",
+    worldMinutes:540,
+    worldDay:1,
+    completedTasks:[],
+    activeTask:null,
+    news:[
+      {day:1,title:"A new business enters the economy",text:"Your company has been registered. The wider economy has no idea who you are yet."}
+    ],
+    lastRealTimestamp:Date.now()
+  };
+
+  generateTask();
+  save();
+  document.getElementById("setup").classList.add("hidden");
+  document.getElementById("app").classList.remove("hidden");
+  render();
+}
+
+function getEligibleTasks(){
+  const industry=state.company.industry;
+  return taskBank.filter(t =>
+    t.industries.includes(industry) &&
+    !state.completedTasks.includes(t.id)
+  );
+}
+
+function generateTask(){
+  if(state.activeTask) return;
+  let eligible=getEligibleTasks();
+  if(!eligible.length){
+    state.completedTasks=[];
+    eligible=getEligibleTasks();
+  }
+  const task=eligible[random(0,eligible.length-1)];
+  state.activeTask=task.id;
+}
+
+function taskById(id){return taskBank.find(t=>t.id===id)}
+
+function applyEffects(effects){
+  const c=state.company;
+  Object.entries(effects).forEach(([key,val])=>{
+    if(key==="cash") c.cash += val;
+    else if(key==="value") c.value += val;
+    else if(key==="reputation") c.reputation=clamp(c.reputation+val,0,100);
+    else if(key==="relationships") c.relationships=clamp(c.relationships+val,0,100);
+    else if(key==="performance") c.performance=clamp(c.performance+val,0,100);
+  });
+
+  // Simple V0 simulation: good management gradually improves
+  // the company's economics; poor performance can hurt.
+  c.revenue += Math.round((c.performance-50)/25);
+  c.expenses += Math.round((50-c.performance)/35);
+  c.revenue=clamp(c.revenue,80,600);
+  c.expenses=clamp(c.expenses,45,450);
+
+  const dailySignal=(c.performance-50)*2+(c.reputation-50);
+  c.value += Math.round(dailySignal/8);
+
+  c.cash=clamp(c.cash,0,999999999);
+  c.value=clamp(c.value,1000,999999999);
+}
+
+function answerTask(index){
+  if(!state.activeTask)return;
+  const task=taskById(state.activeTask);
+  const option=task.options[index];
+  if(!option)return;
+
+  // Controlled uncertainty: the chosen action matters, but outcomes
+  // are not perfectly deterministic.
+  const roll=random(-2,2);
+  const adjusted={...option.effects};
+  if(adjusted.performance) adjusted.performance += roll;
+  if(adjusted.reputation) adjusted.reputation += Math.round(roll/2);
+
+  applyEffects(adjusted);
+
+  state.company.experience += 10 + Math.max(0,state.company.performance-50);
+  state.company.lastDecision=option.label;
+  state.company.streak++;
+  state.personal.decisions++;
+
+  state.completedTasks.push(task.id);
+  state.activeTask=null;
+
+  const possiblePromotion=state.company.experience >= state.company.level*65 &&
+                           state.company.performance >= 52;
+  if(possiblePromotion){
+    state.company.level++;
+    const levels=["Founder","Owner","Manager","Senior Manager","Executive","CEO"];
+    state.company.levelName=levels[Math.min(state.company.level-1,levels.length-1)];
+    state.company.experience=0;
+    state.news.unshift({
+      day:state.worldDay,
+      title:"Promotion / company milestone",
+      text:`Your management performance has improved. You are now operating at the level of ${state.company.levelName}.`
+    });
+    showToast(`Milestone reached: ${state.company.levelName}`);
+  }else{
+    showToast("Decision recorded. The company has changed.");
+  }
+
+  state.news.unshift({
+    day:state.worldDay,
+    title:task.title,
+    text:`You chose: ${option.label}.`
+  });
+
+  generateTask();
+  save();
+  render();
+}
+
+function simulateMinute(){
+  if(!state.started)return;
+
+  const hour=Math.floor(state.worldMinutes/60);
+
+  // Business only actively changes during 09:00–17:00.
+  if(hour>=9 && hour<17){
+    const c=state.company;
+    c.cash += (c.revenue-c.expenses)/480;
+    c.value += ((c.revenue-c.expenses)/1000);
+  }
+
+  state.worldMinutes++;
+
+  if(state.worldMinutes>=1020){ // 17:00
+    finishWorkday();
+  }
+  save();
+  render();
+}
+
+function finishWorkday(){
+  const c=state.company;
+  const dailyProfit=Math.round(c.revenue-c.expenses);
+  c.cash += dailyProfit;
+  c.value += Math.round(dailyProfit*.25);
+
+  state.worldDay++;
+  state.worldMinutes=540;
+  state.activeTask=null;
+
+  // NPC/world movement: small, controlled variation.
+  const marketMove=random(-2,3);
+  c.value=clamp(c.value+marketMove*25,1000,999999999);
+  c.revenue=clamp(c.revenue+random(-4,5),80,600);
+  c.expenses=clamp(c.expenses+random(-3,4),45,450);
+
+  state.news.unshift({
+    day:state.worldDay-1,
+    title:"Workday completed",
+    text:`The company closed the day with approximately ${money(dailyProfit)} in operating result.`
+  });
+
+  generateTask();
+}
+
+function catchUpTime(){
+  if(!state.started)return;
+  const now=Date.now();
+  const elapsed=Math.floor((now-state.lastRealTimestamp)/60000);
+  state.lastRealTimestamp=now;
+
+  // In V0 we cap catch-up to one workday so leaving the tab open
+  // does not create absurd jumps.
+  if(elapsed>0){
+    for(let i=0;i<Math.min(elapsed,48);i++) simulateMinute();
+    save();
+  }
+}
+
+function render(){
+  if(!state.started)return;
+  document.getElementById("worldTime").textContent=worldDateLabel();
+  document.getElementById("topCompany").textContent=state.company.name;
+  document.getElementById("topCash").textContent=money(state.company.cash);
+
+  document.querySelectorAll(".nav-btn[data-page]").forEach(btn=>{
+    btn.classList.toggle("active",btn.dataset.page===state.currentPage);
+  });
+
+  const unread=state.activeTask?1:0;
+  const badge=document.getElementById("mailBadge");
+  badge.textContent=unread;
+  badge.classList.toggle("hidden",!unread);
+
+  const main=document.getElementById("main");
+  if(state.currentPage==="dashboard") main.innerHTML=dashboardHTML();
+  if(state.currentPage==="company") main.innerHTML=companyHTML();
+  if(state.currentPage==="personal") main.innerHTML=personalHTML();
+  if(state.currentPage==="mailbox") main.innerHTML=mailboxHTML();
+  if(state.currentPage==="news") main.innerHTML=newsHTML();
+
+  attachDynamicEvents();
+}
+
+function dashboardHTML(){
+  const c=state.company;
+  const profit=c.revenue-c.expenses;
+  const task=state.activeTask?taskById(state.activeTask):null;
+
+  return `
+    <div class="page-head">
+      <div>
+        <h2>Good morning, ${escapeHTML(c.name)}.</h2>
+        <p>${escapeHTML(industries[c.industry].name)} · ${escapeHTML(c.levelName)}</p>
+      </div>
+      <span class="pill">${timeString()>="09:00" && timeString()<"17:00"?"Business hours":"Off-hours"}</span>
+    </div>
+
+    <div class="cards">
+      <div class="card metric"><div class="label">Company value</div><div class="number">${money(c.value)}</div><div class="sub">Estimated V0 value</div></div>
+      <div class="card metric"><div class="label">Cash</div><div class="number">${money(c.cash)}</div><div class="sub">Available company cash</div></div>
+      <div class="card metric"><div class="label">Daily result</div><div class="number ${profit>=0?"green":"red"}">${profit>=0?"+":""}${money(profit)}</div><div class="sub">Revenue − expenses</div></div>
+      <div class="card metric"><div class="label">Employees</div><div class="number">${c.employees}</div><div class="sub">Small startup</div></div>
+    </div>
+
+    <div class="grid2">
+      <section class="card decision-card">
+        <div class="card-title">
+          <h3>Today's business situation</h3>
+          <span class="decision-meta">${task?escapeHTML(task.category):"Completed"}</span>
+        </div>
+        ${task ? `
+          <h3>${escapeHTML(task.title)}</h3>
+          <p>${escapeHTML(task.text)}</p>
+          <div class="options">
+            ${task.options.map((o,i)=>`
+              <button class="option task-option" data-index="${i}">
+                <strong>${String.fromCharCode(65+i)} · ${escapeHTML(o.label)}</strong>
+                <span>${escapeHTML(o.desc)}</span>
+              </button>
+            `).join("")}
+          </div>
+        ` : `
+          <div class="empty">No decision is waiting right now.</div>
+        `}
+      </section>
+
+      <section class="card">
+        <div class="card-title"><h3>Company health</h3><span class="muted">V0</span></div>
+        ${healthBar("Performance",c.performance)}
+        ${healthBar("Reputation",c.reputation)}
+        ${healthBar("Relationships",c.relationships)}
+        <div style="margin-top:18px" class="muted">
+          <strong style="color:var(--text)">Next milestone</strong>
+          <p style="font-size:12px;margin:4px 0 0">
+            ${Math.max(0,c.level*65-c.experience)} experience until the next management milestone.
+          </p>
+        </div>
+      </section>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <div class="card-title"><h3>What is happening?</h3><span class="muted">Latest</span></div>
+      <div class="list">
+        ${state.news.slice(0,3).map(n=>`
+          <div class="list-item">
+            <div class="row"><strong>${escapeHTML(n.title)}</strong><span class="muted" style="font-size:11px">Day ${n.day}</span></div>
+            <p>${escapeHTML(n.text)}</p>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function healthBar(name,value){
+  return `
+    <div class="progress-wrap">
+      <div class="progress-label"><span>${name}</span><strong>${Math.round(value)}/100</strong></div>
+      <div class="progress-line"><div class="progress-fill" style="width:${clamp(value,0,100)}%"></div></div>
+    </div>
+  `;
+}
+
+function companyHTML(){
+  const c=state.company;
+  return `
+    <div class="page-head">
+      <div><h2>${escapeHTML(c.name)}</h2><p>${escapeHTML(industries[c.industry].name)} startup</p></div>
+      <span class="pill">${escapeHTML(c.levelName)}</span>
+    </div>
+
+    <div class="grid2">
+      <section class="card">
+        <div class="card-title"><h3>Company overview</h3></div>
+        <table class="stat-table">
+          <tr><td>Industry</td><td>${escapeHTML(industries[c.industry].name)}</td></tr>
+          <tr><td>Company value</td><td>${money(c.value)}</td></tr>
+          <tr><td>Cash</td><td>${money(c.cash)}</td></tr>
+          <tr><td>Employees</td><td>${c.employees}</td></tr>
+          <tr><td>Daily revenue</td><td>${money(c.revenue)}</td></tr>
+          <tr><td>Daily expenses</td><td>${money(c.expenses)}</td></tr>
+          <tr><td>Daily operating result</td><td class="${c.revenue-c.expenses>=0?"green":"red"}">${money(c.revenue-c.expenses)}</td></tr>
+        </table>
+      </section>
+
+      <section class="card">
+        <div class="card-title"><h3>Management</h3></div>
+        ${healthBar("Performance",c.performance)}
+        ${healthBar("Reputation",c.reputation)}
+        ${healthBar("Business relationships",c.relationships)}
+        <div style="margin-top:16px">
+          <div class="muted" style="font-size:12px">Experience</div>
+          <strong>${Math.round(c.experience)}</strong>
+        </div>
+      </section>
+    </div>
+
+    <section class="card" style="margin-top:14px">
+      <div class="card-title"><h3>Operations</h3><span class="pill">Simplified V0</span></div>
+      <div class="grid2">
+        <div class="list-item"><strong>Inventory</strong><p>Basic inventory tracking will be added in a later version. V0 only tests the interface and decision loop.</p></div>
+        <div class="list-item"><strong>Suppliers</strong><p>Supplier relationships are represented by a simple relationship score for now.</p></div>
+      </div>
+    </section>
+  `;
+}
+
+function personalHTML(){
+  const p=state.personal;
+  return `
+    <div class="page-head">
+      <div><h2>Personal</h2><p>Your character outside the company.</p></div>
+    </div>
+    <div class="grid2">
+      <section class="card">
+        <div class="card-title"><h3>Personal finances</h3></div>
+        <table class="stat-table">
+          <tr><td>Personal cash</td><td>${money(p.cash)}</td></tr>
+          <tr><td>Decisions made</td><td>${p.decisions}</td></tr>
+          <tr><td>Current position</td><td>${escapeHTML(state.company.levelName)}</td></tr>
+        </table>
+      </section>
+      <section class="card">
+        <div class="card-title"><h3>Profile</h3></div>
+        <div class="list-item"><strong>Founder of ${escapeHTML(state.company.name)}</strong><p>${escapeHTML(industries[state.company.industry].name)} · Day ${state.worldDay}</p></div>
+      </section>
+    </div>
+  `;
+}
+
+function mailboxHTML(){
+  const task=state.activeTask?taskById(state.activeTask):null;
+  return `
+    <div class="page-head">
+      <div><h2>Mailbox</h2><p>Things that reach your company during the day.</p></div>
+      <span class="pill">${task?"1 action required":"No actions waiting"}</span>
+    </div>
+
+    ${task ? `
+      <section class="card decision-card">
+        <div class="card-title"><h3>${escapeHTML(task.title)}</h3><span class="decision-meta">${escapeHTML(task.category)}</span></div>
+        <p>${escapeHTML(task.text)}</p>
+        <div class="options">
+          ${task.options.map((o,i)=>`
+            <button class="option task-option" data-index="${i}">
+              <strong>${String.fromCharCode(65+i)} · ${escapeHTML(o.label)}</strong>
+              <span>${escapeHTML(o.desc)}</span>
+            </button>
+          `).join("")}
+        </div>
+      </section>
+    ` : `<div class="empty">Your inbox is clear.</div>`}
+
+    <section class="card" style="margin-top:14px">
+      <div class="card-title"><h3>Recent messages</h3><span class="muted">Information</span></div>
+      <div class="list">
+        ${state.news.slice(0,8).map(n=>`
+          <div class="list-item">
+            <div class="row"><strong>${escapeHTML(n.title)}</strong><span class="muted" style="font-size:11px">Day ${n.day}</span></div>
+            <p>${escapeHTML(n.text)}</p>
+          </div>
+        `).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function newsHTML(){
+  return `
+    <div class="page-head">
+      <div><h2>World & News</h2><p>A simple information feed for the prototype world.</p></div>
+    </div>
+    <section class="card">
+      <div class="card-title"><h3>Economic news</h3><span class="muted">Prototype feed</span></div>
+      <div class="list">
+        ${state.news.map(n=>`
+          <div class="list-item">
+            <div class="row"><strong>${escapeHTML(n.title)}</strong><span class="muted" style="font-size:11px">Day ${n.day}</span></div>
+            <p>${escapeHTML(n.text)}</p>
+          </div>
+        `).join("")}
+      </div>
+    </section>
+    <div class="footer-note">Later versions can turn this into a real world-wide newspaper and economic information system.</div>
+  `;
+}
+
+function escapeHTML(str){
+  return String(str).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+}
+
+function attachDynamicEvents(){
+  document.querySelectorAll(".task-option").forEach(btn=>{
+    btn.onclick=()=>answerTask(Number(btn.dataset.index));
+  });
+}
+
+document.querySelectorAll(".nav-btn[data-page]").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    state.currentPage=btn.dataset.page;
+    save();
+    render();
+  });
+});
+
+document.getElementById("startBtn").addEventListener("click",createCompany);
+
+document.getElementById("resetBtn").addEventListener("click",()=>{
+  if(confirm("Reset the V0 prototype and create a new company?")){
+    localStorage.removeItem("newEconomyV0");
+    location.reload();
+  }
+});
+
+buildIndustryButtons();
+
+if(load() && state.started){
+  document.getElementById("setup").classList.add("hidden");
+  document.getElementById("app").classList.remove("hidden");
+  catchUpTime();
+  render();
+}
+
+/* One real minute = ten in-game minutes.
+   Ten game minutes per real minute is implemented by moving
+   the world clock forward 10 minutes every 60,000 ms. */
+setInterval(()=>{
+  if(state.started){
+    for(let i=0;i<10;i++) simulateMinute();
+  }
+},60000);
+
+window.addEventListener("focus",()=>{
+  catchUpTime();
+  render();
+});
+</script>
+</body>
+</html>
+'''
+
+path = Path("/mnt/data/index.html")
+path.write_text(html, encoding="utf-8")
+print(f"Created {path} ({len(html):,} characters).")
